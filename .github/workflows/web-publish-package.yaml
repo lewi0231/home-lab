@@ -9,7 +9,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "clusters/staging/apps/**"
+      - "clusters/staging/apps/web/**"
     # Publish semver tags as releases.
     tags: ["v*.*.*"]
 
@@ -82,7 +82,7 @@ jobs:
         with:
           context: clusters/staging/apps/${{ matrix.app }}
           push: ${{ github.event_name != 'pull_request' }}
-          file: clusters/staging/apps/${{ matrix.app }}/Dockerfile
+          file: clusters/staging/apps/web/${{ matrix.app }}/Dockerfile
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.app }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.app }}:${{ github.sha }}
