@@ -85,4 +85,15 @@ kubectl get crds | grep image.toolkit.fluxcd.io # this are required.
 
 ````
 
-5.
+5. I encountered an issue with the architecture. As I'm using ARM64, buildx which is used within Github Actions needs to perform a multiplatform build (or at least ARM64). Refer to the Github Actions section see `with: platforms: linux/arm64, linux/amd64`
+
+6. More commands that I found useful:
+
+```
+kubectl get secrets -n namespace # confirms if you've saved the secret or not
+kubectl logs pod-name -n namespace # an logs from your bod
+kubectl describe pod pod-name -n namespace # additional pod information
+
+
+
+```

@@ -27,7 +27,7 @@ metadata:
   name: personal-blog
   namespace: web
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - port: 80
       targetPort: 80
