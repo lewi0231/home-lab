@@ -20,6 +20,9 @@ chmod 600 ~/.kube/config.yaml`
 
 4. Run this on the master: `export K3S_TOKEN=$(ssh user@$SERVER_IP "sudo -S cat /var/lib/rancher/k3s/server/node-token")` - this will set the cluster token.
 5. Head over to your Agent and run: `curl -sfL https://get.k3s.io | sh -s - server --server https://$SERVER_IP:6443 --token $K3S_TOKEN` - make sure that you use the same token as from the previous step.
+   1. I had some issues with the above - which were resolved with ```curl -sfL https://get.k3s.io | K3S_URL=https://192.168.4.133:6443 K3S_TOKEN=K101137bd30acadb4716151c9e0327a3f92a7b7f04da5f537538e85d23267ce7514::server:41ccbe9f469920db798fb75f6ebe9229 sh -
+
+```
 6. I ended up copying the master node configuration over so that I can run kubectl commands on the Agent / Worker. So from the Master run the following: `scp ~/.kube/config.yaml user@agent-ip:~/.kube/config.yaml`
 7. In the Server and the Agent you'll need to make sure kubectl knows which config you're using, so do this: `export KUBECONFIG=~/.kube/config.yaml` - now you'll be able to run kubectl commands.
 
@@ -29,13 +32,18 @@ chmod 600 ~/.kube/config.yaml`
 2. Run the following to install Flux on your cluster:
 
 ```
+
 # Install flux first
+
 curl -s https://fluxcd.io/install.sh | sudo bash
 export GITHUB_TOKEN=$TOKEN
+
 ```
 
 ```
-flux bootstrap github --owner=$GITHUB_USER --repository=repo-name --branch=main --path=~/clusters/your-cluster --personal
+
+flux bootstrap github --owner=$GITHUB_USER --repository=repo-name --branch=main --path=clusters/your-cluster --personal
+
 ```
 
 Now you should be able to add manifests inside of your-cluster push it up and flux will take care of the rest.
@@ -61,11 +69,20 @@ When adding apps to the GHCR built images need to follow this convention:
 
 1. Ensure you install the following components `flux install --components-extra=image-reflector-controller,image-automation-controller`
 2. Ensure that you've configured GitHub Registry Authentication:
-   ```
-   kubectl create secret docker-registry ghcr-credentials \
-   --namespace=flux-system \
-   --docker-server=ghcr.io \
-   --docker-username=$GITHUB_USERNAME \
+```
+
+kubectl create secret docker-registry ghcr-credentials \
+ --namespace=flux-system \
+ --docker-server=ghcr.io \
+ --docker-username=$GITHUB_USERNAME \
    --docker-password=$GITHUB_TOKEN
-   ```
+
+````
 3. For each image that will be updated you'll need to create the following manifests: ImageRepository, ImagePolicy and ImageUpdateAutomation - see personal-blog-image-automation.yaml as an example.
+4. If you're having issues with the image controllers here are some useful commands: ```
+kubectl get deployments -n flux-system # this will show you whether relevant components are installed.
+kubectl get crds | grep image.toolkit.fluxcd.io # this are required.
+
+````
+
+5.
