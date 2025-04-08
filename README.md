@@ -72,7 +72,7 @@ When adding apps to the GHCR built images need to follow this convention:
 ```
 
 kubectl create secret docker-registry ghcr-credentials \
- --namespace=flux-system \
+ --namespace=web \
  --docker-server=ghcr.io \
  --docker-username=$GITHUB_USERNAME \
    --docker-password=$GITHUB_TOKEN

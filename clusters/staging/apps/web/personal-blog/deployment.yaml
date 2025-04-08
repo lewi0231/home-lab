@@ -13,6 +13,8 @@ spec:
       labels:
         app: personal-blog
     spec:
+      imagePullSecrets:
+        - name: ghrc-credentials
       containers:
         - name: personal-blog
           image: ghcr.io/lewi0231/home-lab-personal-blog:latest # {"$imagepolicy": "flux-system:personal-blog-policy"}
