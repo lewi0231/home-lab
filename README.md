@@ -1,0 +1,71 @@
+# HomeLab - Getting Started
+
+I began this HomeLab as a way to deepen my computer networking knowledge. In order to get something interesting, and substantial I ended up going with Kubernetes - initially the k3s distribution as I'd heard that this is excellent for learning the fundamentals.
+
+## Whilst I wait... for hardware.
+
+While I wait for some hardware to arrive my current setup involves a two VM's which run on my Macbook Pro M1: specifically, 2 x Ubuntu 24.042 LTS.
+
+### Initial steps
+
+1. `ssh` into your VM (Ubuntu) nodes.
+2. Run `curl -sfL https://get.k3s.io | sh -` on my 'Master' node or 'Server' VM.
+3. Config is located at `/etc/rancher/k3s/k3s.yaml`
+
+   1. Copy this configuration to your home folder (do this): `
+sudo mkdir ~/.kube
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config.yaml
+chown $USER:$USER ~/.kube/config.yaml
+chmod 600 ~/.kube/config.yaml`
+
+4. Run this on the master: `export K3S_TOKEN=$(ssh user@$SERVER_IP "sudo -S cat /var/lib/rancher/k3s/server/node-token")` - this will set the cluster token.
+5. Head over to your Agent and run: `curl -sfL https://get.k3s.io | sh -s - server --server https://$SERVER_IP:6443 --token $K3S_TOKEN` - make sure that you use the same token as from the previous step.
+6. I ended up copying the master node configuration over so that I can run kubectl commands on the Agent / Worker. So from the Master run the following: `scp ~/.kube/config.yaml user@agent-ip:~/.kube/config.yaml`
+7. In the Server and the Agent you'll need to make sure kubectl knows which config you're using, so do this: `export KUBECONFIG=~/.kube/config.yaml` - now you'll be able to run kubectl commands.
+
+### Flux Setup
+
+1. Head over to your github developer settings and add a new key / token, make sure you copy it.
+2. Run the following to install Flux on your cluster:
+
+```
+# Install flux first
+curl -s https://fluxcd.io/install.sh | sudo bash
+export GITHUB_TOKEN=$TOKEN
+```
+
+```
+flux bootstrap github --owner=$GITHUB_USER --repository=repo-name --branch=main --path=~/clusters/your-cluster --personal
+```
+
+Now you should be able to add manifests inside of your-cluster push it up and flux will take care of the rest.
+
+### Apps
+
+I have an app folder within the relevant namespace. As an exercise I've created a simple blog - using a slightly adjusted nextjs starter.
+
+My thinking is that I should be able to:
+
+- push my application code up to github
+- github actions automatically builds this docker container and places it within the GHCR - Which is Github Container Registry
+- Flux automatically recognises this new build and then applies it to my HomeLab
+- Flux will automatically update the image version inside of the deployment file.
+
+#### Things to note
+
+When adding apps to the GHCR built images need to follow this convention:
+
+- ghcr.io/github-user-name/name-of-container:version
+
+#### Ensure automation after image build
+
+1. Ensure you install the following components `flux install --components-extra=image-reflector-controller,image-automation-controller`
+2. Ensure that you've configured GitHub Registry Authentication:
+   ```
+   kubectl create secret docker-registry ghcr-credentials \
+   --namespace=flux-system \
+   --docker-server=ghcr.io \
+   --docker-username=$GITHUB_USERNAME \
+   --docker-password=$GITHUB_TOKEN
+   ```
+3. For each image that will be updated you'll need to create the following manifests: ImageRepository, ImagePolicy and ImageUpdateAutomation - see personal-blog-image-automation.yaml as an example.
