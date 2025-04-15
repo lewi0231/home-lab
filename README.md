@@ -93,7 +93,29 @@ kubectl get crds | grep image.toolkit.fluxcd.io # this are required.
 kubectl get secrets -n namespace # confirms if you've saved the secret or not
 kubectl logs pod-name -n namespace # an logs from your bod
 kubectl describe pod pod-name -n namespace # additional pod information
+sudo journalctl -u k3s -f # good for checking logs on server
 
 
 
+
+
+```
+
+7. Uninstall notes:
+
+```
+sudo /usr/local/bin/k3s-uninstall.sh # will uninstall server
+
+
+```
+
+### Scripts
+
+I created some scripts with the help of AI to run uninstalls of my cluster and reinstall as needed, due to my ongoing learning and mistakes. Scripts are located in the scripts folder at the root of the repo.
+
+I found the best most reliable way to execute these programs was to do the following:
+
+```
+scp uninstall-k3s.sh lewi0231@192.168.0.76:/tmp/script.sh # copy to the remote server or agent
+ssh -tt lewi0231@192.168.0.76 'bash /tmp/script.sh' # run it interactively
 ```

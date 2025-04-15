@@ -1,0 +1,41 @@
+testbed:
+  name: home_network
+
+devices:
+  pfsense_router:
+    os: generic
+    type: router
+    connections:
+      cli:
+        protocol: ssh
+        ip: 192.168.1.1 # Replace with your pfSense IP
+
+  soho_router:
+    os: generic
+    type: router
+    connections:
+      cli:
+        protocol: ssh
+        ip: 192.168.1.2 # Replace with your SOHO router IP
+
+topology:
+  pfsense_router:
+    interfaces:
+      WAN:
+        link: internet
+        type: ethernet
+      LAN:
+        link: internal_network
+        type: ethernet
+      VOIP:
+        link: voip_network
+        type: ethernet
+
+  soho_router:
+    interfaces:
+      WAN:
+        link: internal_network
+        type: ethernet
+      LAN:
+        link: soho_network
+        type: ethernet
