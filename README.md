@@ -1,127 +1,265 @@
-# HomeLab - Getting Started
+# HomeLab - Kubernetes Cluster Setup
 
-I began this HomeLab as a way to deepen my computer networking knowledge. In order to get something interesting, and substantial I ended up going with Kubernetes - initially the k3s distribution as I'd heard that this is excellent for learning the fundamentals.
+This repository documents my HomeLab setup using Kubernetes (k3s) as a way to deepen my computer networking knowledge. The setup includes both automated scripts and manual steps for deployment and management.
 
-## Whilst I wait... for hardware.
+## Table of Contents
 
-While I wait for some hardware to arrive my current setup involves a two VM's which run on my Macbook Pro M1: specifically, 2 x Ubuntu 24.042 LTS.
+- [Hardware Setup](#hardware-setup)
+- [Network Configuration](#network-configuration)
+  - [VLAN Management](#vlan-management)
+  - [Double NAT Configuration](#double-nat-configuration)
+- [Virtualization](#virtualization)
+  - [Proxmox Setup](#proxmox-setup)
+- [Kubernetes Cluster](#kubernetes-cluster)
+  - [Server Node Setup](#server-node-setup)
+  - [Agent Node Setup](#agent-node-setup)
+  - [Flux Setup](#flux-setup)
+  - [Ingress Configuration](#ingress-configuration)
+- [Application Deployment](#application-deployment)
+- [Troubleshooting](#troubleshooting)
 
-### Initial steps
+## Hardware Setup
 
-1. `ssh` into your VM (Ubuntu) nodes.
-2. Run `curl -sfL https://get.k3s.io | sh -` on my 'Master' node or 'Server' VM.
-3. Config is located at `/etc/rancher/k3s/k3s.yaml`
+Currently running on three Ubuntu 22.04 LTS VMs on a Macbook Pro M1.
 
-   1. Copy this configuration to your home folder (do this): ```
-      sudo mkdir ~/.kube
-      sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config.yaml
-      chown $USER:$USER ~/.kube/config.yaml
-      chmod 600 ~/.kube/config.yaml
+## Network Configuration
 
-````
+### VLAN Management
 
-4. Run this on the master: `export K3S_TOKEN=$(ssh user@$SERVER_IP "sudo -S cat /var/lib/rancher/k3s/server/node-token")` - this will set the cluster token.
-5. Head over to your Agent and run: `curl -sfL https://get.k3s.io | sh -s - server --server https://$SERVER_IP:6443 --token $K3S_TOKEN` - make sure that you use the same token as from the previous step.
-   1. I had some issues with the above - which were resolved with ```curl -sfL https://get.k3s.io | K3S_URL=https://192.168.4.133:6443 K3S_TOKEN=K101137bd30acadb4716151c9e0327a3f92a7b7f04da5f537538e85d23267ce7514::server:41ccbe9f469920db798fb75f6ebe9229 sh -
+[Add your VLAN configuration details here]
 
-````
+### Double NAT Configuration
 
-6. I ended up copying the master node configuration over so that I can run kubectl commands on the Agent / Worker. So from the Master run the following: `scp ~/.kube/config.yaml user@agent-ip:~/.kube/config.yaml`
-7. In the Server and the Agent you'll need to make sure kubectl knows which config you're using, so do this: `export KUBECONFIG=~/.kube/config.yaml` - now you'll be able to run kubectl commands.
+[Add details about your double NAT setup with WiFi modem connected to pfSense router]
+
+## Virtualization
+
+### Proxmox Setup
+
+[Add your Proxmox configuration details here]
+
+## Kubernetes Cluster
+
+### Server Node Setup
+
+#### Using Automated Script (Recommended)
+
+1. SSH into your server VM
+2. Run the setup script:
+
+```bash
+scp setup-k3s-server.sh user@server-ip:/tmp/script.sh
+ssh -tt user@server-ip 'bash /tmp/script.sh'
+```
+
+The script will:
+
+- Install k3s server
+- Set up kubeconfig
+- Create necessary namespaces
+- Install and configure Flux
+- Set up GitHub Container Registry authentication
+
+#### Manual Setup Steps
+
+1. SSH into your server VM
+2. Install k3s server:
+
+```bash
+curl -sfL https://get.k3s.io | sh -
+```
+
+3. Set up kubeconfig:
+
+```bash
+sudo mkdir ~/.kube
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config.yaml
+chown $USER:$USER ~/.kube/config.yaml
+chmod 600 ~/.kube/config.yaml
+```
+
+4. Export kubeconfig path:
+
+```bash
+export KUBECONFIG=~/.kube/config.yaml
+```
+
+### Agent Node Setup
+
+#### Using Automated Script (Recommended)
+
+1. SSH into your agent VM
+2. Run the setup script:
+
+```bash
+scp setup-k3s-agent.sh user@agent-ip:/tmp/script.sh
+ssh -tt user@agent-ip 'bash /tmp/script.sh'
+```
+
+The script will:
+
+- Install k3s agent
+- Connect to the server node
+- Set up necessary configurations
+
+#### Manual Setup Steps
+
+1. Get the node token from the server:
+
+```bash
+export K3S_TOKEN=$(ssh user@$SERVER_IP "sudo -S cat /var/lib/rancher/k3s/server/node-token")
+```
+
+2. Install k3s agent:
+
+```bash
+curl -sfL https://get.k3s.io | K3S_URL=https://$SERVER_IP:6443 K3S_TOKEN=$K3S_TOKEN sh -
+```
+
+3. Copy kubeconfig from server to agent:
+
+```bash
+scp ~/.kube/config.yaml user@agent-ip:~/.kube/config.yaml
+```
+
+4. Export kubeconfig path on agent:
+
+```bash
+export KUBECONFIG=~/.kube/config.yaml
+```
 
 ### Flux Setup
 
-1. Head over to your github developer settings and add a new key / token, make sure you copy it.
-2. Run the following to install Flux on your cluster:
+#### Using Automated Script (Recommended)
 
-```
+1. Create a GitHub personal access token with appropriate permissions
+2. The server setup script will automatically:
+   - Install Flux
+   - Bootstrap your repository
+   - Configure image automation controllers
+   - Set up GitHub Container Registry authentication
 
-# Install flux first
+#### Manual Setup Steps
 
+1. Create a GitHub personal access token
+2. Install Flux:
+
+```bash
 curl -s https://fluxcd.io/install.sh | sudo bash
 export GITHUB_TOKEN=$TOKEN
-
 ```
 
+3. Bootstrap Flux with GitHub:
+
+```bash
+flux bootstrap github \
+    --owner=$GITHUB_USER \
+    --repository=repo-name \
+    --branch=main \
+    --path=clusters/your-cluster \
+    --personal
 ```
 
-flux bootstrap github --owner=$GITHUB_USER --repository=repo-name --branch=main --path=clusters/your-cluster --personal
+4. Install additional Flux components:
 
+```bash
+flux install --components-extra=image-reflector-controller,image-automation-controller
 ```
 
-Now you should be able to add manifests inside of your-cluster push it up and flux will take care of the rest.
+5. Configure GitHub Registry Authentication:
 
-### Apps
-
-I have an app folder within the relevant namespace. As an exercise I've created a simple blog - using a slightly adjusted nextjs starter.
-
-My thinking is that I should be able to:
-
-- push my application code up to github
-- github actions automatically builds this docker container and places it within the GHCR - Which is Github Container Registry
-- Flux automatically recognises this new build and then applies it to my HomeLab
-- Flux will automatically update the image version inside of the deployment file.
-
-#### Things to note
-
-When adding apps to the GHCR built images need to follow this convention:
-
-- ghcr.io/github-user-name/name-of-container:version
-
-#### Ensure automation after image build
-
-1. Ensure you install the following components `flux install --components-extra=image-reflector-controller,image-automation-controller`
-2. Ensure that you've configured GitHub Registry Authentication:
-
-```
-
+```bash
 kubectl create secret docker-registry ghcr-credentials \
- --namespace=web \
- --docker-server=ghcr.io \
- --docker-username=$GITHUB_USERNAME \
-   --docker-password=$GITHUB_TOKEN
+    --namespace=web \
+    --docker-server=ghcr.io \
+    --docker-username=$GITHUB_USERNAME \
+    --docker-password=$GITHUB_TOKEN
+```
+
+### Ingress Configuration
+
+[Add your NGINX Ingress setup details here]
+
+## Application Deployment
+
+Applications are deployed using the following workflow:
+
+1. Push application code to GitHub
+2. GitHub Actions builds and pushes Docker image to GHCR
+3. Flux detects new image and updates deployment
+4. Image automation controllers handle version updates
+
+Image naming convention for GHCR:
+
+```
+ghcr.io/github-user-name/name-of-container:version
+```
+
+For each image that will be updated, you'll need to create the following manifests:
+
+- ImageRepository
+- ImagePolicy
+- ImageUpdateAutomation
+
+## Troubleshooting
+
+### Useful kubectl Commands
+
+```bash
+# Check cluster status
+kubectl get nodes
+kubectl get pods -A
+kubectl get namespaces
+
+# Check Flux components
+kubectl get deployments -n flux-system
+kubectl get crds | grep image.toolkit.fluxcd.io
+kubectl get gitrepositories -A
+kubectl get events -n flux-system
+flux get sources git
+
+# Reconcile Flux
+flux reconcile kustomization <your-kustomization-name>
+
+# Debugging
+kubectl get secrets -n namespace
+kubectl logs pod-name -n namespace
+kubectl describe pod pod-name -n namespace
+sudo journalctl -u k3s -f
 
 ```
 
-3. For each image that will be updated you'll need to create the following manifests: ImageRepository, ImagePolicy and ImageUpdateAutomation - see personal-blog-image-automation.yaml as an example.
-4. If you're having issues with the image controllers here are some useful commands: ```
-   kubectl get deployments -n flux-system # this will show you whether relevant components are installed.
-   kubectl get crds | grep image.toolkit.fluxcd.io # this are required.
+### Uninstallation
 
-````
+#### Using Scripts
 
-5. I encountered an issue with the architecture. As I'm using ARM64, buildx which is used within Github Actions needs to perform a multiplatform build (or at least ARM64). Refer to the Github Actions section see `with: platforms: linux/arm64, linux/amd64`
+```bash
+# Server uninstallation
+scp uninstall-k3s.sh user@server-ip:/tmp/script.sh
+ssh -tt user@server-ip 'bash /tmp/script.sh'
 
-6. More commands that I found useful:
-
-```
-kubectl get secrets -n namespace # confirms if you've saved the secret or not
-kubectl logs pod-name -n namespace # an logs from your bod
-kubectl describe pod pod-name -n namespace # additional pod information
-sudo journalctl -u k3s -f # good for checking logs on server
-
-
-
-
-
+# Agent uninstallation
+scp uninstall-k3s-agent.sh user@agent-ip:/tmp/script.sh
+ssh -tt user@agent-ip 'bash /tmp/script.sh'
 ```
 
-7. Uninstall notes:
+#### Manual Uninstallation
 
+```bash
+# Server uninstallation
+sudo /usr/local/bin/k3s-uninstall.sh
 ```
-sudo /usr/local/bin/k3s-uninstall.sh # will uninstall server
 
+## Notes
 
-```
-
-### Scripts
-
-I created some scripts with the help of AI to run uninstalls of my cluster and reinstall as needed, due to my ongoing learning and mistakes. Scripts are located in the scripts folder at the root of the repo.
-
-I found the best most reliable way to execute these programs was to do the following:
-
-```
-scp uninstall-k3s.sh lewi0231@192.168.0.76:/tmp/script.sh # copy to the remote server or agent
-ssh -tt lewi0231@192.168.0.76 'bash /tmp/script.sh' # run it interactively
-```
-````
+- Ensure proper architecture compatibility (ARM64) when building images
+- GitHub Actions builds should include multi-platform support:
+  ```yaml
+  with:
+    platforms: linux/arm64, linux/amd64
+  ```
+- For image automation issues, check:
+  ```bash
+  kubectl get deployments -n flux-system
+  kubectl get crds | grep image.toolkit.fluxcd.io
+  ```
