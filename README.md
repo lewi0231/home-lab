@@ -178,7 +178,16 @@ kubectl create secret docker-registry ghcr-credentials \
 
 ### Ingress Configuration
 
-[Add your NGINX Ingress setup details here]
+My current understanding is that Ingress acts as a type of load balancer. K3S default is to use Trafaek, I thought it more useful to become more familiar with the more popular Nginx plus I've read from others that it tends to work 'better'. In the cloud environment the below install should work out of the box however on baremetal an externally accessible (external to the cluster) ip is no automatically allocated, therefore the option that i went with is the MetalLB which adds allows this to work somehow - I'll update when i know how this works.
+
+1. Run `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/cloud/deploy.yaml` which will install the ingress-nginx-controller. See here for more information: `https://kubernetes.github.io/ingress-nginx/deploy/?ref=blog.thenets.org#bare-metal`
+2. The above creates a number of pods and it will take some time before the controller is read. You can check the status by running the following: `kubectl get pods --namespace=ingress-nginx`
+3. Once it runs then you can provide the controller with information about how to navigate to your apps service. See `clusters/stating/apps/web/personal-blog/ingress.yaml' as an example.
+4. Because this isn't enough to create an accessible IP (from outside the cluster) I've installed MetalLB: `kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml`
+5. This also requires configuration: see `clusters/staging/metallb-system/metallb-config.yaml`. This uses a port range which is relevant to your network configuration - this needs to be an ip range that are not part of the dhcp pool. NOTE: I have `flux cd` set up so when i push these changes up it's automatically applied locally, otherwise you would `apply` the file.
+6. More information available here about installing MetalLB: `https://metallb.universe.tf/installation/` - NOTE: you'll need to edit the nginx-ingress-controller if using Kube-Proxy in IPVS mode - I'm not clear on what that is, but I suspect you would know if you set this up.
+7. Now if you run `kubectl get svc ingress-nginx-controller -n ingress-nginx` you should now have an eternal-ip.
+8. One final step is to locally map the hostname, in my case `personal-blog.staging.local` in your `/etc/hosts` file to the ip address that was allocated.
 
 ## Application Deployment
 
@@ -226,6 +235,9 @@ kubectl get secrets -n namespace
 kubectl logs pod-name -n namespace
 kubectl describe pod pod-name -n namespace
 sudo journalctl -u k3s -f
+
+# Ingress
+kubectl get service ingress-nginx-controller -n ingress-nginx
 
 ```
 
