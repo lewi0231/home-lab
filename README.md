@@ -275,3 +275,11 @@ sudo /usr/local/bin/k3s-uninstall.sh
   kubectl get deployments -n flux-system
   kubectl get crds | grep image.toolkit.fluxcd.io
   ```
+
+### Possible Issues
+
+1. ````lewi0231@ubuntu-sol:~$ flux get sources git
+   ✗ failed to get server groups: Get "http://localhost:8080/api": dial tcp [::1]:8080: connect: connection refused```
+   ````
+
+-
