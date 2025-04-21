@@ -14,7 +14,7 @@ metadata:
     gethomepage.dev/name: Homepage
 spec:
   rules:
-    - host: homepage.home.arpa
+    - host: dashboard.home.arpa
       http:
         paths:
           - path: "/"
