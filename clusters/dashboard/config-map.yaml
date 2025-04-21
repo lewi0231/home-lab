@@ -47,4 +47,4 @@ data:
     - search:
         provider: duckduckgo
         target: _blank
-  # docker.yaml: ""
+  docker.yaml: ""
