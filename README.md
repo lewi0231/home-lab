@@ -154,9 +154,10 @@ export GITHUB_TOKEN=$TOKEN
 ```bash
 flux bootstrap github \
     --owner=$GITHUB_USER \
-    --repository=repo-name \
+    --repository=home-lab \
     --branch=main \
-    --path=clusters/your-cluster \
+    --path=clusters/flux-system \
+    --components-extra=image-reflector-controller,image-automation-controller \
     --personal
 ```
 
