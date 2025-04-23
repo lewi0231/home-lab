@@ -1,0 +1,51 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "45.7.1" # Check for the latest version
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+  values:
+    # Ensure these run on worker nodes
+    prometheus:
+      prometheusSpec:
+        nodeSelector:
+          kubernetes.io/hostname: ubuntu-jupiter # agent node
+        ingress:
+          enabled: true
+          ingressClassName: nginx
+          hosts:
+            - prometheus.home.arpa
+          path: /
+          annotations:
+            kubernetes.io/ingress.class: "nginx"
+
+    # Grafana configuration
+    grafana:
+      nodeSelector:
+        kubernetes.io/hostname: ubuntu-saturn # other agent node
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - monitoring.home.arpa
+        path: /
+        annotations:
+          kubernetes.io/ingress.class: "nginx"
+
+    # Set resource limits to be appropriate for home lab
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 200Mi
