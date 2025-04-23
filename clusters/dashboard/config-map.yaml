@@ -25,6 +25,10 @@ data:
         - Personal Blog:
             href: http://personal-blog.staging.home.arpa/
             description: My staged blog in the cluster
+    - Monitoring:
+        - Grafana
+            href: http://monitoring.home.arpa
+            description: Monitor stuff!
   widgets.yaml: |
     - kubernetes:
         cluster:
