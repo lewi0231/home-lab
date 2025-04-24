@@ -1,0 +1,25 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: promtail
+  namespace: monitoring
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: promtail
+      version: "6.11.0" # Check for latest version
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+  values:
+    config:
+      clients:
+        - url: http://loki:3100/loki/api/v1/push
+    tolerations:
+      - effect: NoSchedule
+        operator: Exists
+    # This allows Promtail to run on all nodes to collect logs
+    daemonset:
+      enabled: true

@@ -1,0 +1,27 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: loki
+      version: "5.5.0" # Check for latest version
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+  values:
+    loki:
+      nodeSelector:
+        kubernetes.io/hostname: ubuntu-jupiter
+    singleBinary:
+      replicas: 1
+    storage:
+      type: filesystem
+      filesystem:
+        chunks_directory: /data/loki/chunks
+        rules_directory: /data/loki/rules
+      size: 10Gi
