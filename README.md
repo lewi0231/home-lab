@@ -28,6 +28,8 @@ Currently running on three Ubuntu 22.04 LTS VMs on a Macbook Pro M1.
 
 [Add your VLAN configuration details here]
 
+![HomeLab](./homeLab.png)
+
 ### Double NAT Configuration
 
 [Add details about your double NAT setup with WiFi modem connected to pfSense router]
